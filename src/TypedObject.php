@@ -314,7 +314,7 @@ class TypedObject extends BaseTypedObject {
             $resultingArgs = [];
             foreach ($args as $args2) {
                 // It needs to be a dictionary or an empty array (i.e. []: which may be either a list or a dict)
-                if (is_array($args2) && (! check_array_is_list($args2) || count($args2) == 0)) {
+                if (is_array($args2) && ((! check_array_is_list($args2)) || count($args2) == 0)) {
                     $resultingArgs = array_merge($resultingArgs, $args2);
                 } else {
                     throw new \Exception("Invalid arguments for ".get_called_class()."; must be a list of arguments");
@@ -546,7 +546,7 @@ class TypedObject extends BaseTypedObject {
      * @throws \InvalidArgumentException if the array contains an attribute that is not defined for the object
      * @throws \InvalidArgumentException if the array is missing a not nullable attribute
      */
-    public static function fromArray(array $array, bool $strict = false) {
+    public static function fromArray(array $array, bool $strict = false) : TypedObject {
         $class = get_called_class();
         $result = new $class($array);
         if ($strict) {
@@ -561,21 +561,33 @@ class TypedObject extends BaseTypedObject {
 
     /**
      * Creates a TypedObject from an object, by converting all the attributes of the object into attributes of the TypedObject.
-     * 
+     * @param $object The object from which to create the TypedObject
+     * @param $strict is a boolean indicating if the function should check that every attribute in the object is defined for the object
+     *                If the object contains an attribute that is not defined for the object, an exception is thrown
+     * @return the TypedObject created from the object
      */
-    public static function fromObject($object, $strict = false) {
+    public static function fromObject($object, $strict = false) : TypedObject {
         return static::fromArray((array)$object, $strict);
     }
 
     /**
      * Converts the object into an standard object where the attributes are the attributes of the object.
+     * @return \stdClass The object with the attributes of the object
      */
-    public function toObject() :  \stdClass {
+    public function toObject() : \stdClass {
         $obj = new \stdClass();
         foreach (static::$_attributeDefinition[static::class] as $attribute => $definition) {
             $obj->$attribute = static::$_attributeDefinition[static::class][$attribute]->convert_value($this->$attribute);
         }
         return $obj;
+    }
+
+    public static function fromJson($json_string, bool $strict = false) : TypedObject {
+        $object = json_decode($json_string);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \InvalidArgumentException("Invalid JSON string: " . json_last_error_msg());
+        }
+        return static::fromObject($object, $strict);
     }
 }
 ?>

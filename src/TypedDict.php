@@ -119,7 +119,7 @@ class TypedDict extends BaseTypedObject implements \ArrayAccess, \IteratorAggreg
      * @param $type string The type of the values in the dict
      * @param $object \StdClass The object to be converted
      */
-    public static function fromObject(TypeDefinition $type, \StdClass $object) {
+    public static function fromObject(TypeDefinition $type, \StdClass $object) : TypedDict {
         return static::fromArray($type, (array)$object);
     }
 

@@ -1,5 +1,4 @@
 <?php
-
 namespace ddn\typedobject;
 
 require_once("functions.php");
@@ -52,6 +51,9 @@ class TypeDefinition {
             case 'list':
             case 'array':
                 break;
+            case 'enum':
+                throw new \TypeError("enum type cannot be created directly; please use the TypeDefinitionEnum class or the fromString() method");
+                break;
             default:
                 if (!class_exists($type)) {
                     throw new \TypeError(sprintf("undefined class \"%s\"", $type));
@@ -87,6 +89,7 @@ class TypeDefinition {
         }
 
         $subtype = null;
+        $values_class = null;
 
         // If type is a dict or a list without subtype, then it is a dict or a list of mixed
         if ($type == 'list' || $type == 'dict') {
@@ -102,6 +105,10 @@ class TypeDefinition {
                 $subtype = substr($type, 5, strlen($type)-6);
                 $type = 'list';
             }
+            if (substr($type, 0, 5) == 'enum[' && $type[strlen($type)-1] == ']') {
+                $values_class = substr($type, 5, strlen($type)-6);
+                $type = 'enum';
+            }
         }
 
         if ($subtype !== null) {
@@ -109,6 +116,9 @@ class TypeDefinition {
         }
 
         switch ($type) {
+            case 'enum':
+                return TypeDefinitionEnum::fromType($type, $nullable, $values_class);
+                break;
             case 'array':
                 throw new \Error("array type is only valid for specific library purposes");
                 break;

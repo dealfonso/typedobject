@@ -209,14 +209,15 @@ To use _TypedObject_ one must subclass `TypedObject` and define the `ATTRIBUTES`
 The `ATTRIBUTES` constant is an associative array where the keys are the _name for each attribute_,  and the values are the _type for each attribute_.
  
 The possible types can be:
-- int: int number
-- float: floating point number
-- string: string
-- bool: boolean
-- list[type]: list of objects of type _type_.
-- dict[type]: dictionary of objects of type _type_. The keys for each entry of the dictionary is converted to strings.
-- object: is a class name which must be a subclass of `TypedObject`.
-- mixed: any type is allowed for the attribute. This includes _null_ values. When using this type, if assigned an array or an object, it will be converted to a `TypedArray` or a `TypedObject` object, respectively.
+- `int`: int number
+- `float`: floating point number
+- `string`: string
+- `bool`: boolean
+- `list[type]`: list of objects of type _type_.
+- `dict[type]`: dictionary of objects of type _type_. The keys for each entry of the dictionary is converted to strings.
+- `enum[<EnumValues derived class>]`: a enumeration of possible values for the attribute. The values must be a subclass of `EnumValues` class.
+- `<TypedObject derived class>`: is a class name which must be a subclass of `TypedObject`.
+- `mixed`: any type is allowed for the attribute. This includes _null_ values. When using this type, if assigned an array or an object, it will be converted to a `TypedArray` or a `TypedObject` object, respectively.
 
 e.g.
 
@@ -368,6 +369,7 @@ If wanted to control this behavior, we can use the constant `ddn\typedobject\USE
 - bool: false
 - list[type]: []
 - dict[type]: []
+- enum[\<EnumValues derived class\>]: first value of the list of possible values.
 - object: null
 - mixed: null
 - array: [] (only available for `TypedObjectSimple`)
@@ -525,6 +527,78 @@ If wanted and extended type conversion, the constant `ddn\typedobject\EXTENDED_T
 
 **Note:** The extended type conversion has only sense if `ddn\typedobject\STRICT_TYPE_CHECKING` is set to `false`.
 
+### Enumerations
+
+The library also supports enumerations. To define an attribute as an enumeration, the type must be defined as `enum[<EnumValues derived class>]`, where _EnumValues_ is a subclass of the `EnumValues` class.
+
+To define an enumeration, the class must extend the `EnumValues` class and define the possible values by means of the `VALUES` constant, which must be a list of the possible values for the enumeration, where the first value is the default value.
+
+e.g.
+
+```php
+class UserType extends EnumValues {
+    const VALUES = [
+        'admin', 'user', 'guest'
+    ];
+}
+```
+
+Then, the attribute can be defined as an enumeration:
+
+```php
+class User extends TypedObject {
+    const ATTRIBUTES = [
+        'name' => 'string',
+        'type' => 'enum[UserType]',
+    ];
+}
+```
+
+And then we can use the enumeration like this:
+
+```php
+$user = new User();
+$user->name = "John Doe";
+$user->type = "admin";
+```
+
+In this example, the attribute _type_ is defined as an enumeration, so it can only be set to one of the possible values defined in the `UserType` class. If we try to set it to a value that is not in the list, an exception will be raised.
+
+```php
+$user->type = "invalid"; // This will raise an exception
+```
+
+#### Advanced usage of enumerations
+
+The possible values in the `VALUES` constant do not need to be strings. They can be any type, even mixed types. In any case, the first value in the list will be considered to be the default value for the enumeration.
+
+e.g.
+
+```php
+class UserType extends EnumValues {
+    const VALUES = [
+        0, "user", 1.0, true
+    ];
+}
+```
+
+In this example, the possible values are `0`, `user`, `1.0` and `true`. If we try to set the attribute _type_ to any of these values, it will be accepted. 
+
+```php
+$user = new User();
+$user->name = "John Doe";
+$user->type = 0; // This will work
+$user->type = "user"; // This will work
+$user->type = 1.0; // This will work
+$user->type = true; // This will work
+```
+
+The key point for the enumerations is that the class must implement the `EnumValues` interface:
+- `is_valid($value)`, will be used to check if the value is valid for the enumeration. The method must return `true` if the value is valid, and `false` otherwise.
+- `get_values()`, will be used to get the list of possible values for the enumeration. The method must return an array with the possible values.
+
+The default implementation of the `EnumValues` class is based on the existence of the `VALUES` constant. But it is possible to implement the interface in any way that is needed.
+
 ### Inheritance
 
 `TypedObject`s are also able to inherit attributes from their parent classes. Take the following example:
@@ -599,6 +673,7 @@ The `TypedObject` is the core class for this library. Its methods are:
 - `toJson()` - Returns a json string with the representation of the object as standard object.
 - `::fromArray($data)` - Creates an object, by parsing the given associative array into the attributes defined in the class. Each of the attributes is recursively parsed, according to the type defined to it.
 - `::fromObject($data)` - Creates an object, by parsing the given object into the attributes defined in the class. Each of the attributes is recursively parsed, according to the type defined to it.
+- `::fromJson($json_string)` - Creates an object, by parsing the given json string into the attributes defined in the class. Each of the attributes is recursively parsed, according to the type defined to it.
 - `is_initialized()` - Returns true if all the attributes have been initialized.
 - `get_uninitialized_attributes()` - Returns an array with the names of the attributes that have not been initialized.
 
