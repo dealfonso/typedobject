@@ -3,7 +3,7 @@ namespace ddn\typedobject;
 
 require_once("TypedObject.php");
 
-class EnumValues {
+abstract class EnumValues {
     /**
      * The list of values for this enum.
      * @var array
@@ -26,4 +26,11 @@ class EnumValues {
     public static function values() : array {
         return static::VALUES;
     }
+
+    // public static function fromValue($value) {
+    //     if (!static::is_valid($value)) {
+    //         throw new \TypeError("Invalid value for enum " . static::class . ": $value");
+    //     }
+    //     return $value;
+    // }
 }

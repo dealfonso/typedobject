@@ -47,7 +47,21 @@ class TypedObjectSimple extends TypedObject {
                         $subtype = TypeDefinition::fromType("mixed", true);
                         break;
                 }
-                $type_definition = TypeDefinition::fromType($type_name, $is_nullable, $subtype);
+                // TODO: this generates an error "Value of type string returned from User2::__get() must be compatible with unset property User2::$type of type UserType"
+                //  and this is because PHP checks that the RHS of the assignment is compatible with the LHS.
+                //  To solve this, we would need to re-consider the enum type definition. For example, we could add a "value" property to the enum class and use that value
+                //    as the value of the attribute, and then implement the toObject method for the EnumClass to return the value of the property. Then we'll be able to 
+                //    change the definition of the enum attributes to accept either "enum[ValuesClass]" or directly the "ValuesClass" derived class. In this case, we would
+                //    also be able to use it for the simple object definition by casting the type to the enum class.
+                //  This may be a break change, so we need to consider this carefully.
+
+                // We are checking if the type is a subclass of EnumValues, in which case we need to use TypeDefinitionEnum
+                if (is_a($type_name, "ddn\\typedobject\\EnumValues", true)) {
+                    // throw new \Exception("EnumValues are not supported as types for TypedObjectSimple");
+                    $type_definition = TypeDefinitionEnum::fromType('enum', $is_nullable, $type_name);
+                } else {
+                    $type_definition = TypeDefinition::fromType($type_name, $is_nullable, $subtype);
+                }
             }
             
             // Now we are detecting wether there are any attribute that shadows the definition of previous classes
